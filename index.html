@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>植物大战僵尸 网页移植版</title>
   <style>
     :root {
@@ -478,6 +478,8 @@
       color: rgba(255,255,255,.78);
     }
 
+    .rotate-hint { display: none; }
+
     @media (max-width: 900px) {
       .topbar, .hud { grid-template-columns: 1fr; }
       .side-panel { min-width: 0; }
@@ -485,9 +487,166 @@
       .stage { min-height: 440px; }
       .seed { width: 86px; min-width: 86px; }
     }
+
+    @media (max-width: 700px) and (orientation: portrait) {
+      body { overflow: hidden; }
+      .app { display: none; }
+      .rotate-hint {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        color: white;
+        text-align: center;
+        background: #244c2a;
+      }
+      .rotate-hint-inner {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+      }
+      .rotate-icon {
+        width: 64px;
+        height: 64px;
+        display: grid;
+        place-items: center;
+        border: 2px solid rgba(255,255,255,.74);
+        border-radius: 50%;
+        font-size: 38px;
+        line-height: 1;
+      }
+      .rotate-hint strong { font-size: 24px; }
+      .rotate-hint span:last-child { color: rgba(255,255,255,.76); }
+    }
+
+    @media (max-height: 600px) and (orientation: landscape) {
+      body {
+        min-height: 100dvh;
+        overflow: hidden;
+        background: #203a1f;
+      }
+      .app {
+        position: relative;
+        width: 100vw;
+        height: 100dvh;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      .topbar {
+        position: fixed;
+        inset: 0;
+        z-index: 110;
+        display: block;
+        margin: 0;
+        pointer-events: none;
+      }
+      .topbar > div:first-child { display: none; }
+      .scorebar {
+        position: fixed;
+        top: max(4px, env(safe-area-inset-top));
+        left: max(4px, env(safe-area-inset-left));
+        gap: 3px;
+      }
+      .pill {
+        min-height: 25px;
+        padding: 3px 6px;
+        border-radius: 6px;
+        background: rgba(255, 251, 236, .9);
+        font-size: 11px;
+        box-shadow: 0 4px 10px rgba(20, 35, 18, .18);
+      }
+      .hud { display: block; margin: 0; }
+      .seed-bank {
+        position: fixed;
+        top: max(33px, calc(env(safe-area-inset-top) + 29px));
+        left: 50%;
+        z-index: 110;
+        width: min(calc(100vw - 140px), 520px);
+        min-height: 0;
+        height: 62px;
+        padding: 3px;
+        gap: 3px;
+        border-radius: 6px;
+        background: rgba(255, 246, 218, .9);
+        transform: translateX(-50%);
+        scrollbar-width: none;
+      }
+      .seed-bank::-webkit-scrollbar { display: none; }
+      .seed {
+        width: 61px;
+        min-width: 61px;
+        min-height: 54px;
+        height: 54px;
+        padding: 2px;
+        grid-template-rows: 34px 16px;
+        border-radius: 4px;
+      }
+      .seed img {
+        max-width: 39px;
+        max-height: 34px;
+      }
+      .seed-info { gap: 2px; font-size: 9px; }
+      .cool-text { font-size: 14px; }
+      .side-panel {
+        position: fixed;
+        right: max(4px, env(safe-area-inset-right));
+        bottom: max(4px, env(safe-area-inset-bottom));
+        z-index: 110;
+        display: block;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      .texture-panel, .message { display: none; }
+      .tools { justify-content: flex-end; gap: 3px; }
+      .tool {
+        min-height: 27px;
+        padding: 3px 7px;
+        border-radius: 6px;
+        font-size: 11px;
+        background: rgba(255, 251, 236, .9);
+        box-shadow: 0 4px 10px rgba(20, 35, 18, .18);
+      }
+      .stage-wrap {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--mobile-stage-width, 900px);
+        height: var(--mobile-stage-height, 600px);
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        transform: translate(-50%, -50%);
+      }
+      .stage {
+        width: 900px;
+        height: 600px;
+        min-height: 0;
+        max-width: none;
+        margin: 0;
+        transform: scale(var(--mobile-stage-scale, 1));
+        transform-origin: top left;
+      }
+      .overlay { padding: 8px; }
+      .overlay-box { width: 420px; padding: 16px; }
+      .overlay h2 { font-size: 28px; }
+      .overlay p { display: none; }
+    }
   </style>
 </head>
 <body>
+  <div class="rotate-hint" role="status">
+    <div class="rotate-hint-inner">
+      <span class="rotate-icon" aria-hidden="true">↻</span>
+      <strong>请将手机横过来</strong>
+      <span>横屏后即可开始游戏</span>
+    </div>
+  </div>
   <main class="app">
     <header class="topbar">
       <div>
@@ -563,6 +722,28 @@
     const textureInput = document.getElementById("textureInput");
     const clearTexture = document.getElementById("clearTexture");
     const banner = document.getElementById("banner");
+
+    function fitMobileStage() {
+      const landscapePhone = matchMedia("(max-height: 600px) and (orientation: landscape)").matches;
+      if (!landscapePhone) {
+        document.documentElement.style.removeProperty("--mobile-stage-scale");
+        document.documentElement.style.removeProperty("--mobile-stage-width");
+        document.documentElement.style.removeProperty("--mobile-stage-height");
+        return;
+      }
+      const viewport = window.visualViewport;
+      const width = viewport ? viewport.width : window.innerWidth;
+      const height = viewport ? viewport.height : window.innerHeight;
+      const scale = Math.min(width / 900, height / 600);
+      document.documentElement.style.setProperty("--mobile-stage-scale", scale.toFixed(4));
+      document.documentElement.style.setProperty("--mobile-stage-width", `${900 * scale}px`);
+      document.documentElement.style.setProperty("--mobile-stage-height", `${600 * scale}px`);
+    }
+
+    fitMobileStage();
+    addEventListener("resize", fitMobileStage);
+    addEventListener("orientationchange", () => setTimeout(fitMobileStage, 120));
+    if (window.visualViewport) visualViewport.addEventListener("resize", fitMobileStage);
 
     const rows = 5;
     const cols = 9;
