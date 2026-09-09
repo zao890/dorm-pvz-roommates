@@ -1,0 +1,1469 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>植物大战僵尸 网页移植版</title>
+  <style>
+    :root {
+      --ink: #172018;
+      --panel: rgba(255, 246, 218, .92);
+      --line: rgba(51, 67, 39, .24);
+      --gold: #f3c95a;
+      --green: #2f6d35;
+      --asset-plant: none;
+      --asset-zombie: none;
+      --asset-pea: none;
+      --asset-lawn: url("assets/pvz/Background.jpg");
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 225, 99, .28), transparent 24rem),
+        linear-gradient(135deg, #c8e5ab, #e7dfba);
+      overflow-x: hidden;
+    }
+
+    button, input { font: inherit; }
+
+    .app {
+      width: min(1240px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 14px 0 20px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 58px);
+      line-height: .96;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: #4e614c;
+      font-size: 14px;
+    }
+
+    .scorebar, .tools, .texture-panel {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill, .tool, .upload {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 251, 236, .88);
+      padding: 7px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 8px 18px rgba(54, 71, 39, .1);
+      white-space: nowrap;
+    }
+
+    .tool, .upload {
+      cursor: pointer;
+      color: var(--ink);
+      user-select: none;
+    }
+
+    .tool.primary {
+      background: var(--green);
+      color: white;
+      border-color: #245428;
+    }
+
+    .tool[aria-pressed="true"] {
+      background: #7a4b24;
+      color: white;
+      border-color: #5d371a;
+    }
+
+    .upload input { display: none; }
+
+    .hud {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .seed-bank, .side-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 14px 30px rgba(50, 72, 35, .13);
+    }
+
+    .seed-bank {
+      display: flex;
+      gap: 8px;
+      padding: 9px;
+      overflow-x: auto;
+      min-height: 102px;
+    }
+
+    .seed {
+      position: relative;
+      width: 96px;
+      min-width: 96px;
+      min-height: 82px;
+      border: 1px solid rgba(98, 73, 32, .36);
+      border-radius: 6px;
+      background: #f8e2a6;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 48px auto;
+      place-items: center;
+      padding: 5px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .seed[aria-pressed="true"] {
+      outline: 3px solid var(--gold);
+      outline-offset: 1px;
+    }
+
+    .seed.unavailable {
+      filter: grayscale(.45);
+      opacity: .58;
+    }
+
+    .seed img {
+      max-width: 52px;
+      max-height: 48px;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 3px rgba(52, 40, 16, .25));
+    }
+
+    .seed-info {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #4b3714;
+    }
+
+    .cooldown {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      transform-origin: top;
+      transform: scaleY(0);
+      pointer-events: none;
+    }
+
+    .cool-text {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      color: white;
+      font-size: 22px;
+      font-weight: 900;
+      text-shadow: 0 2px 5px rgba(0,0,0,.55);
+    }
+
+    .seed.cooling .cool-text { display: grid; }
+
+    .side-panel {
+      padding: 8px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+      min-width: 390px;
+    }
+
+    .texture-panel {
+      justify-content: flex-end;
+    }
+
+    .tabs {
+      display: inline-flex;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff8e5;
+    }
+
+    .tabs button {
+      border: 0;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      min-height: 34px;
+      padding: 0 10px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .tabs button:last-child { border-right: 0; }
+    .tabs button[aria-pressed="true"] { background: var(--green); color: white; }
+
+    .message {
+      min-height: 22px;
+      color: #31533b;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .stage-wrap {
+      border: 1px solid rgba(47, 68, 37, .3);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 22px 44px rgba(42, 69, 38, .18);
+      background: #5d8e43;
+    }
+
+    .stage {
+      position: relative;
+      width: 900px;
+      height: 600px;
+      max-width: 100%;
+      margin: 0 auto;
+      background-image: var(--asset-lawn);
+      background-size: 1400px 600px;
+      background-position: -150px 0;
+      isolation: isolate;
+      touch-action: none;
+    }
+
+    .grid {
+      position: absolute;
+      left: 99px;
+      top: 81px;
+      width: 738px;
+      height: 490px;
+      z-index: 8;
+    }
+
+    .cell {
+      position: absolute;
+      width: 82px;
+      height: 98px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      z-index: 9;
+    }
+
+    .cell:hover, .cell.preview {
+      background: transparent;
+      outline: 0;
+    }
+
+    .cell.blocked {
+      background: transparent;
+      outline: 0;
+    }
+
+    .entity {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .plant {
+      width: 70px;
+      height: 70px;
+      filter: drop-shadow(0 8px 4px rgba(21, 45, 20, .25));
+    }
+
+    .plant.custom { background-image: var(--asset-plant) !important; }
+
+    .plant.sunflower, .plant.peashooter, .plant.wallnut, .plant.snowpea, .plant.repeater {
+      width: 92px;
+      height: 92px;
+      margin-top: -3px;
+    }
+
+    .plant.potato {
+      width: 108px;
+      height: 108px;
+      margin-top: -7px;
+    }
+
+    .plant.cherry {
+      width: 112px;
+      height: 112px;
+      margin-top: -8px;
+    }
+
+    .plant.potato.custom { background-size: contain !important; background-position: center !important; }
+
+    .plant.shooting {
+      animation: shootKick .18s ease-out;
+    }
+
+    .plant.eaten {
+      animation: chewShake .18s ease-in-out 2;
+    }
+
+    .plant.low1 { filter: drop-shadow(0 8px 4px rgba(21, 45, 20, .25)) saturate(.9) brightness(.88); }
+    .plant.low2 { filter: drop-shadow(0 8px 4px rgba(21, 45, 20, .25)) saturate(.7) brightness(.72); }
+
+    @keyframes shootKick {
+      45% { scale: 1.12 .93; translate: -3px 0; }
+    }
+
+    @keyframes chewShake {
+      50% { translate: -4px 1px; }
+    }
+
+    .zombie {
+      width: 140px;
+      height: 140px;
+      z-index: 5;
+      filter: drop-shadow(0 8px 5px rgba(20, 25, 18, .28));
+    }
+
+    .zombie.custom { background-image: var(--asset-zombie) !important; }
+    .zombie.slow { filter: drop-shadow(0 8px 5px rgba(20, 25, 18, .28)) hue-rotate(150deg) saturate(1.2); }
+    .zombie.hit { filter: drop-shadow(0 8px 5px rgba(20, 25, 18, .28)) brightness(1.65); }
+
+    .pea {
+      width: 24px;
+      height: 24px;
+      z-index: 7;
+      background-size: contain;
+      filter: drop-shadow(0 3px 3px rgba(26, 63, 18, .3));
+    }
+
+    .pea.custom { background-image: var(--asset-pea) !important; }
+
+    .sun {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border: 0;
+      background: url("assets/pvz/custom-sun-transparent.gif") center / contain no-repeat;
+      cursor: pointer;
+      z-index: 20;
+      filter: drop-shadow(0 4px 4px rgba(80, 53, 15, .24));
+      transition: top .16s linear, opacity .2s linear;
+    }
+
+    .mower {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: url("assets/pvz/LawnMower.png") center / contain no-repeat;
+      transform: translate(-50%, -50%);
+      z-index: 6;
+      filter: drop-shadow(0 6px 4px rgba(20, 34, 20, .24));
+    }
+
+    .impact {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      transform: translate(-50%, -50%);
+      background: url("assets/pvz/Boom.gif") center / contain no-repeat;
+      z-index: 14;
+      pointer-events: none;
+    }
+
+    .small-impact {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(255,255,255,.92) 0 18%, rgba(126, 189, 66, .72) 19% 36%, transparent 37%);
+      z-index: 9;
+      animation: pop .22s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes pop {
+      to { scale: 1.8; opacity: 0; }
+    }
+
+    .ghost {
+      position: fixed;
+      width: 72px;
+      height: 72px;
+      z-index: 1000;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      background: center / contain no-repeat;
+      opacity: .78;
+      filter: drop-shadow(0 12px 8px rgba(0,0,0,.28));
+    }
+
+    .ghost.shovel {
+      width: 86px;
+      height: 86px;
+      rotate: -18deg;
+    }
+
+    .banner {
+      position: absolute;
+      left: 50%;
+      top: 13%;
+      transform: translateX(-50%);
+      padding: 8px 20px;
+      border-radius: 8px;
+      background: rgba(112, 35, 28, .9);
+      color: white;
+      font-weight: 900;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .banner.show { animation: banner 1.6s ease-in-out; }
+
+    @keyframes banner {
+      0%, 100% { opacity: 0; translate: 0 -10px; }
+      18%, 82% { opacity: 1; translate: 0 0; }
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(28, 46, 29, .54);
+      color: white;
+      z-index: 50;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .overlay-box {
+      width: min(500px, 92vw);
+      background: rgba(18, 31, 21, .93);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 22px 55px rgba(0,0,0,.28);
+    }
+
+    .overlay h2 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      letter-spacing: 0;
+    }
+
+    .overlay p {
+      margin: 0 0 16px;
+      color: rgba(255,255,255,.78);
+    }
+
+    @media (max-width: 900px) {
+      .topbar, .hud { grid-template-columns: 1fr; }
+      .side-panel { min-width: 0; }
+      .texture-panel { justify-content: flex-start; }
+      .stage { min-height: 440px; }
+      .seed { width: 86px; min-width: 86px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>植物大战僵尸 网页移植版</h1>
+        <p class="subtitle">已套用你给的 PVZ-master 素材。拖卡片到草坪，或者选卡后点格子。</p>
+      </div>
+      <div class="scorebar" aria-live="polite">
+        <div class="pill">☀ 阳光 <strong id="sunCount">150</strong></div>
+        <div class="pill">🌊 波次 <strong id="waveCount">1</strong></div>
+        <div class="pill">⏱ <strong id="timer">00:00</strong></div>
+      </div>
+    </header>
+
+    <section class="hud">
+      <div class="seed-bank" id="seedBank" aria-label="植物卡牌"></div>
+      <div class="side-panel">
+        <div class="texture-panel">
+          <div class="tabs" id="textureTabs" aria-label="贴图目标">
+            <button type="button" data-texture="plant" aria-pressed="true">植物</button>
+            <button type="button" data-texture="zombie" aria-pressed="false">僵尸</button>
+            <button type="button" data-texture="pea" aria-pressed="false">豌豆</button>
+            <button type="button" data-texture="lawn" aria-pressed="false">草坪</button>
+          </div>
+          <label class="upload">上传贴图<input id="textureInput" type="file" accept="image/*"></label>
+          <button class="tool" type="button" id="clearTexture">还原</button>
+        </div>
+        <div class="tools">
+          <button class="tool" type="button" id="shovelBtn" aria-pressed="false">铲子</button>
+          <button class="tool" type="button" id="pauseBtn" aria-pressed="false">暂停</button>
+          <button class="tool" type="button" id="speedBtn" aria-pressed="false">1x</button>
+          <button class="tool" type="button" id="musicBtn" aria-pressed="false">音乐</button>
+          <button class="tool primary" type="button" id="restartBtn">重新开始</button>
+        </div>
+        <div class="message" id="message">选择植物卡片，再种到草坪上。</div>
+      </div>
+    </section>
+
+    <section class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="grid" id="grid"></div>
+        <div class="banner" id="banner">一大波僵尸来了</div>
+        <div class="overlay" id="overlay">
+          <div class="overlay-box">
+            <h2>准备好了吗？</h2>
+            <p>这是从你给的 Qt 项目移植出来的网页版。</p>
+            <button class="tool primary" type="button" id="startBtn">开始游戏</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <audio id="music" src="assets/pvz/Grazy%20Dave.mp3" loop></audio>
+
+  <script>
+    const A = "assets/pvz/";
+    const stage = document.getElementById("stage");
+    const grid = document.getElementById("grid");
+    const seedBank = document.getElementById("seedBank");
+    const sunCount = document.getElementById("sunCount");
+    const waveCount = document.getElementById("waveCount");
+    const timer = document.getElementById("timer");
+    const message = document.getElementById("message");
+    const overlay = document.getElementById("overlay");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const shovelBtn = document.getElementById("shovelBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const speedBtn = document.getElementById("speedBtn");
+    const musicBtn = document.getElementById("musicBtn");
+    const music = document.getElementById("music");
+    const textureTabs = document.getElementById("textureTabs");
+    const textureInput = document.getElementById("textureInput");
+    const clearTexture = document.getElementById("clearTexture");
+    const banner = document.getElementById("banner");
+
+    const rows = 5;
+    const cols = 9;
+    const plantsMeta = {
+      sunflower: { qt: "SunFlower", name: "向日葵", cost: 50, reload: 7.5, hp: 300, img: "../custom/roommate-sunflower.gif", icon: "../custom/roommate-sunflower.png", sunRate: 10 },
+      peashooter: { qt: "Peashooter", name: "豌豆", cost: 100, reload: 7.5, hp: 300, img: "../custom/roommate-peashooter.gif", icon: "../custom/roommate-peashooter.png", fireRate: 1.4, damage: 25, shots: 1 },
+      cherry: { qt: "CherryBomb", name: "樱桃", cost: 150, reload: 20, hp: 300, img: "../custom/roommate-cherry-bomb-outward.gif", icon: "../custom/roommate-cherry-bomb-outward.png", bombDelay: 1.15, bombRadius: 1.6, damage: 1800 },
+      wallnut: { qt: "WallNut", name: "坚果", cost: 50, reload: 20, hp: 4000, img: "../custom/roommate-wallnut-v2.gif", icon: "../custom/roommate-wallnut-v2.png" },
+      snowpea: { qt: "SnowPea", name: "寒冰", cost: 175, reload: 7.5, hp: 300, img: "../custom/roommate-peashooter-ice.gif", icon: "../custom/roommate-peashooter-ice.png", fireRate: 1.4, damage: 25, slow: true, shots: 1 },
+      potato: { qt: "PotatoMine", name: "土豆雷", cost: 25, reload: 20, hp: 300, img: "../custom/roommate-potato-game-sheet.png", icon: "../custom/roommate-potato.png", armTime: 15, emergeTime: 1.65, damage: 1800 },
+      repeater: { qt: "Repeater", name: "双发", cost: 200, reload: 7.5, hp: 300, img: "../custom/roommate-peashooter-punk.gif", icon: "../custom/roommate-peashooter-punk.png", fireRate: 1.4, damage: 25, shots: 2 }
+    };
+
+    const zombieMeta = {
+      basic: { hp: 270, speed: 80 / 7.2, attack: 100, walk: ["ZombieWalk1.gif", "ZombieWalk2.gif"], eat: "ZombieAttack.gif", die: "ZombieDie.gif" },
+      cone: { hp: 640, speed: (80 / 7.2) * .3, attack: 100, walk: ["ConeZombieWalk.gif"], eat: "ConeZombieAttack.gif", die: "ZombieDie.gif", sunAction: "custom-cone-sun-action.gif" },
+      bucket: { hp: 1370, speed: 80 / 7.2, attack: 100, walk: ["BucketZombieWalk.gif"], eat: "BucketZombieAttack.gif", die: "ZombieDie.gif" },
+      screen: { hp: 1370, speed: 80 / 7.2, attack: 100, walk: ["ScreenZombieWalk.gif"], eat: "ScreenZombieAttack.gif", die: "ZombieDie.gif" },
+      football: { hp: 1670, speed: 80 / 4.1, attack: 100, walk: ["FootballZombieWalk.gif"], eat: "FootballZombieAttack.gif", die: "FootballZombieDie.gif" }
+    };
+
+    const state = {
+      running: false,
+      paused: false,
+      gameOver: false,
+      selected: "sunflower",
+      tool: "plant",
+      textureTarget: "plant",
+      sun: 200,
+      wave: 1,
+      lastWave: 1,
+      elapsed: 0,
+      spawnClock: 16,
+      zombieInterval: 32,
+      skySunClock: 7,
+      speed: 1,
+      id: 1,
+      dragMode: null,
+      dragKey: null,
+      dragStart: null,
+      dragging: false,
+      suppressClick: false,
+      plants: [],
+      zombies: [],
+      peas: [],
+      suns: [],
+      mowers: [],
+      cooldowns: {},
+      ghost: null,
+      preview: null,
+      musicOn: false,
+      textures: {
+        plant: localStorage.getItem("pvz.texture.plant.dorm-v1") || "",
+        zombie: localStorage.getItem("pvz.texture.zombie") || "",
+        pea: localStorage.getItem("pvz.texture.pea") || "",
+        lawn: localStorage.getItem("pvz.texture.lawn") || ""
+      }
+    };
+
+    function pctX(col) { return 140 + col * 82; }
+    function pctY(row) { return 130 + row * 98; }
+    function say(text) { message.textContent = text; }
+    function img(name) { return `url("${A}${name}")`; }
+    function bg(el, name) { el.style.backgroundImage = img(name); }
+    function textureStorageKey(target) {
+      return target === "plant" ? "pvz.texture.plant.dorm-v1" : `pvz.texture.${target}`;
+    }
+
+    function renderPotato(plant, frame) {
+      if (plant.spriteFrame === frame) return;
+      plant.spriteFrame = frame;
+      plant.el.style.backgroundSize = "800% 500%";
+      plant.el.style.backgroundPosition = `${frame % 8 / 7 * 100}% ${Math.floor(frame / 8) / 4 * 100}%`;
+    }
+
+    function renderSeeds() {
+      seedBank.innerHTML = "";
+      Object.entries(plantsMeta).forEach(([key, meta]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "seed";
+        btn.dataset.plant = key;
+        btn.draggable = false;
+        btn.setAttribute("aria-pressed", String(state.selected === key));
+        btn.innerHTML = `
+          <img src="${A}${meta.icon}" alt="">
+          <span class="seed-info"><span>${meta.name}</span><span>☀${meta.cost}</span></span>
+          <span class="cooldown"></span>
+          <span class="cool-text"></span>
+        `;
+        btn.addEventListener("click", () => {
+          if (state.suppressClick) return;
+          if (!state.dragging) selectPlant(key);
+        });
+        btn.addEventListener("pointerdown", event => beginCardDrag(event, key));
+        btn.addEventListener("mousedown", event => beginCardDrag(event, key));
+        seedBank.append(btn);
+      });
+      syncHud();
+    }
+
+    function setSelectedPlant(key, rerender = true) {
+      state.selected = key;
+      state.tool = "plant";
+      shovelBtn.setAttribute("aria-pressed", "false");
+      if (rerender) renderSeeds();
+    }
+
+    function selectPlant(key) {
+      setSelectedPlant(key);
+      say(`已选择：${plantsMeta[key].name}`);
+    }
+
+    function buildGrid() {
+      grid.innerHTML = "";
+      for (let row = 0; row < rows; row++) {
+        const mower = document.createElement("div");
+        mower.className = "mower";
+        mower.style.left = "60px";
+        mower.style.top = `${pctY(row)}px`;
+        stage.append(mower);
+        state.mowers.push({ row, x: 60, used: false, active: false, el: mower });
+        for (let col = 0; col < cols; col++) {
+          const cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = "cell";
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          cell.style.left = `${col * 82}px`;
+          cell.style.top = `${row * 98}px`;
+          cell.setAttribute("aria-label", `第${row + 1}路 第${col + 1}格`);
+          cell.addEventListener("click", () => handleCell(row, col));
+          cell.addEventListener("pointerenter", () => previewCell(row, col));
+          grid.append(cell);
+        }
+      }
+    }
+
+    function syncHud() {
+      sunCount.textContent = Math.floor(state.sun);
+      waveCount.textContent = state.wave;
+      pauseBtn.textContent = state.paused ? "继续" : "暂停";
+      pauseBtn.setAttribute("aria-pressed", String(state.paused));
+      speedBtn.textContent = `${state.speed}x`;
+      speedBtn.setAttribute("aria-pressed", String(state.speed > 1));
+      musicBtn.setAttribute("aria-pressed", String(state.musicOn));
+      document.querySelectorAll(".seed").forEach(btn => {
+        const key = btn.dataset.plant;
+        const meta = plantsMeta[key];
+        const cool = state.cooldowns[key] || 0;
+        const unavailable = state.running && !state.gameOver && (state.sun < meta.cost || cool > 0);
+        btn.classList.toggle("unavailable", unavailable);
+        btn.classList.toggle("cooling", cool > 0);
+        const mask = btn.querySelector(".cooldown");
+        const text = btn.querySelector(".cool-text");
+        mask.style.transform = `scaleY(${Math.min(1, cool / meta.reload)})`;
+        text.textContent = cool > 0 ? Math.ceil(cool) : "";
+      });
+    }
+
+    function applyTextures() {
+      document.documentElement.style.setProperty("--asset-plant", state.textures.plant ? `url("${state.textures.plant}")` : "none");
+      document.documentElement.style.setProperty("--asset-zombie", state.textures.zombie ? `url("${state.textures.zombie}")` : "none");
+      document.documentElement.style.setProperty("--asset-pea", state.textures.pea ? `url("${state.textures.pea}")` : "none");
+      document.documentElement.style.setProperty("--asset-lawn", state.textures.lawn ? `url("${state.textures.lawn}")` : img("Background.jpg"));
+      stage.style.backgroundSize = state.textures.lawn ? "100% 100%" : "1400px 600px";
+      stage.style.backgroundPosition = state.textures.lawn ? "center" : "-150px 0";
+      document.querySelectorAll(".plant").forEach(el => el.classList.toggle("custom", Boolean(state.textures.plant)));
+      document.querySelectorAll(".zombie").forEach(el => el.classList.toggle("custom", Boolean(state.textures.zombie)));
+      document.querySelectorAll(".pea").forEach(el => el.classList.toggle("custom", Boolean(state.textures.pea)));
+    }
+
+    function handleCell(row, col) {
+      if (state.tool === "shovel") return shovel(row, col);
+      plantAt(row, col, state.selected);
+    }
+
+    function canPlant(row, col, key = state.selected) {
+      const meta = plantsMeta[key];
+      return state.running && !state.paused && !state.gameOver
+        && state.sun >= meta.cost
+        && (state.cooldowns[key] || 0) <= 0
+        && !state.plants.some(p => p.row === row && p.col === col);
+    }
+
+    function canDragCard(key) {
+      const meta = plantsMeta[key];
+      if (!state.running || state.paused || state.gameOver) {
+        say("先开始游戏。");
+        return false;
+      }
+      if (state.sun < meta.cost) {
+        say("阳光不够。");
+        return false;
+      }
+      if ((state.cooldowns[key] || 0) > 0) {
+        say("卡片还在冷却。");
+        return false;
+      }
+      return true;
+    }
+
+    function hasPlant(row, col) {
+      return state.plants.some(p => p.row === row && p.col === col);
+    }
+
+    function plantAt(row, col, key) {
+      if (!state.running || state.paused || state.gameOver) return;
+      const meta = plantsMeta[key];
+      if (state.plants.some(p => p.row === row && p.col === col)) return say("这里已经有植物。");
+      if (state.sun < meta.cost) return say("阳光不够。");
+      if ((state.cooldowns[key] || 0) > 0) return say("卡片还在冷却。");
+
+      state.sun -= meta.cost;
+      state.cooldowns[key] = meta.reload;
+      const el = document.createElement("div");
+      el.className = `entity plant ${key}${state.textures.plant ? " custom" : ""}`;
+      el.style.left = `${pctX(col)}px`;
+      el.style.top = `${pctY(row)}px`;
+      bg(el, meta.img);
+      stage.append(el);
+      const plant = {
+        id: state.id++,
+        key,
+        row,
+        col,
+        x: pctX(col),
+        y: pctY(row),
+        hp: meta.hp,
+        maxHp: meta.hp,
+        fire: .35,
+        sun: 3,
+        timer: 0,
+        armed: !meta.armTime,
+        state: "live",
+        el
+      };
+      state.plants.push(plant);
+      if (key === "potato") renderPotato(plant, 0);
+      pop(plant.x, plant.y);
+      syncHud();
+      say(`种下了${meta.name}`);
+    }
+
+    function shovel(row, col) {
+      const plant = state.plants.find(p => p.row === row && p.col === col);
+      if (!plant) return say("这里没有植物。");
+      plant.dead = true;
+      plant.el.remove();
+      state.plants = state.plants.filter(p => p.id !== plant.id);
+      pop(pctX(col), pctY(row));
+      say("铲掉了一棵植物。");
+    }
+
+    function spawnZombie(forceType, forceRow, forceX) {
+      const row = Number.isInteger(forceRow) ? forceRow : Math.floor(Math.random() * rows);
+      const roll = Math.random();
+      let type = forceType || "basic";
+      if (!forceType) {
+        if (roll < .40) type = "basic";
+        else if (roll < .70) type = "cone";
+        else if (roll < .80) type = "bucket";
+        else if (roll < .90) type = "screen";
+        else type = "football";
+      }
+      const meta = zombieMeta[type];
+      const el = document.createElement("div");
+      el.className = `entity zombie ${type}${state.textures.zombie ? " custom" : ""}`;
+      const startX = Number.isFinite(forceX) ? forceX : 878;
+      el.style.left = `${startX}px`;
+      el.style.top = `${pctY(row)}px`;
+      bg(el, meta.walk[Math.floor(Math.random() * meta.walk.length)]);
+      stage.append(el);
+      state.zombies.push({
+        id: state.id++,
+        type,
+        row,
+        x: startX,
+        y: pctY(row),
+        hp: meta.hp,
+        maxHp: meta.hp,
+        speed: meta.speed,
+        baseSpeed: meta.speed,
+        attack: meta.attack,
+        bite: 0,
+        slow: 0,
+        hit: 0,
+        mode: "walk",
+        dieTimer: 0,
+        el
+      });
+    }
+
+    function setZombieMode(z, mode) {
+      if (z.mode === mode) return;
+      z.mode = mode;
+      const meta = zombieMeta[z.type];
+      if (mode === "eat") bg(z.el, meta.eat);
+      if (mode === "walk") bg(z.el, meta.walk[0]);
+      if (mode === "sunAction") bg(z.el, meta.sunAction || meta.walk[0]);
+      if (mode === "die") bg(z.el, meta.die);
+    }
+
+    function nearestColFromX(x) {
+      return Math.round((x - 140) / 82);
+    }
+
+    function nearestRowFromY(y) {
+      return Math.round((y - 130) / 98);
+    }
+
+    function isConeNearSun(z) {
+      if (z.type !== "cone") return false;
+      const zCol = nearestColFromX(z.x);
+      const zRow = z.row;
+      return state.suns.some(sun => {
+        if (sun.dead) return false;
+        const sCol = nearestColFromX(sun.x);
+        const sRow = nearestRowFromY(sun.targetY);
+        return Math.abs(zCol - sCol) <= 1 && Math.abs(zRow - sRow) <= 1;
+      });
+    }
+
+    function shoot(plant, snow = false, offset = 0) {
+      const meta = plantsMeta[plant.key];
+      const el = document.createElement("div");
+      el.className = `entity pea${snow ? " snow" : ""}${state.textures.pea ? " custom" : ""}`;
+      el.style.left = `${plant.x + 32 + offset}px`;
+      el.style.top = `${plant.y}px`;
+      bg(el, snow ? "PeaSnow.png" : "Pea.png");
+      stage.append(el);
+      state.peas.push({
+        id: state.id++,
+        row: plant.row,
+        x: plant.x + 32 + offset,
+        y: plant.y,
+        speed: 360,
+        damage: meta.damage,
+        snow,
+        el
+      });
+      plant.el.classList.remove("shooting");
+      void plant.el.offsetWidth;
+      plant.el.classList.add("shooting");
+      setTimeout(() => plant.el.classList.remove("shooting"), 220);
+    }
+
+    function spawnSun(x, y, targetY = y) {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "sun";
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      const sun = { id: state.id++, x, y, targetY, life: 10, speed: 60, landed: y >= targetY, el };
+      el.addEventListener("click", () => collectSun(sun));
+      stage.append(el);
+      state.suns.push(sun);
+    }
+
+    function collectSun(sun) {
+      state.sun += 25;
+      sun.dead = true;
+      sun.el.animate([
+        { transform: "translate(0,0) scale(1)", opacity: 1 },
+        { transform: "translate(-44px,-62px) scale(.3)", opacity: 0 }
+      ], { duration: 280, easing: "ease-in" });
+      setTimeout(() => sun.el.remove(), 280);
+      syncHud();
+      say("阳光 +25");
+    }
+
+    function updatePlants(dt) {
+      state.plants.forEach(p => {
+        const meta = plantsMeta[p.key];
+        if (p.hp <= 0) p.dead = true;
+        if (p.dead) return;
+
+        if (p.key === "wallnut") {
+          p.el.classList.toggle("low1", p.hp <= p.maxHp * .66 && p.hp > p.maxHp * .33);
+          p.el.classList.toggle("low2", p.hp <= p.maxHp * .33);
+        }
+
+        if (p.key === "sunflower") {
+          p.sun -= dt;
+          if (p.sun <= 0) {
+            p.sun = meta.sunRate;
+            spawnSun(p.x + Math.random() * 30 - 15, p.y, p.y + Math.random() * 30 + 15);
+          }
+        }
+
+        if (p.key === "potato" && !p.armed) {
+          p.timer += dt;
+          const emerging = p.timer - (meta.armTime - meta.emergeTime);
+          renderPotato(p, Math.max(0, Math.min(32, Math.floor(emerging / .05))));
+          if (p.timer >= meta.armTime) {
+            p.armed = true;
+          }
+        }
+
+        if (p.key === "potato" && p.armed) {
+        const target = state.zombies.find(z => z.row === p.row && Math.abs(z.x - p.x) < 50 && z.mode !== "die");
+          if (target) {
+            explode(p.x, p.y, 1.05, meta.damage);
+            bg(p.el, "PotatoMineBomb.gif");
+            p.el.style.backgroundSize = "contain";
+            p.el.style.backgroundPosition = "center";
+            p.dead = true;
+          }
+        }
+
+        if (p.key === "cherry") {
+          p.timer += dt;
+          if (p.timer >= meta.bombDelay) {
+            explode(p.x, p.y, meta.bombRadius, meta.damage);
+            p.dead = true;
+          }
+        }
+
+        if (meta.fireRate) {
+          p.fire -= dt;
+        const target = state.zombies.some(z => z.row === p.row && z.mode !== "die");
+          if (target && p.fire <= 0) {
+            p.fire = meta.fireRate;
+            for (let i = 0; i < meta.shots; i++) shoot(p, Boolean(meta.slow), i * 2.2);
+          }
+        }
+      });
+
+      state.plants = state.plants.filter(p => {
+        if (p.dead) {
+          setTimeout(() => p.el.remove(), p.key === "cherry" || p.key === "potato" ? 420 : 0);
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function updatePeas(dt) {
+      state.peas.forEach(pea => {
+        pea.x += pea.speed * dt;
+        pea.el.style.left = `${pea.x}px`;
+        const hit = state.zombies.find(z => z.row === pea.row && z.mode !== "die" && Math.abs(z.x - pea.x) < 15);
+        if (hit) {
+          hit.hp -= pea.damage;
+          hit.hit = .12;
+          if (pea.snow) hit.slow = 4.5;
+          pea.dead = true;
+          smallPop(pea.x, pea.y);
+        }
+        if (pea.x > 919) pea.dead = true;
+      });
+      state.peas = state.peas.filter(p => {
+        if (p.dead) p.el.remove();
+        return !p.dead;
+      });
+    }
+
+    function updateZombies(dt) {
+      state.zombies.forEach(z => {
+        z.hit = Math.max(0, z.hit - dt);
+        z.slow = Math.max(0, z.slow - dt);
+        z.el.classList.toggle("hit", z.hit > 0);
+        z.el.classList.toggle("slow", z.slow > 0);
+
+        if (z.hp <= 0 && z.mode !== "die") {
+          z.mode = "";
+          setZombieMode(z, "die");
+          z.dieTimer = 1.25;
+          state.sun += 4;
+        }
+        if (z.mode === "die") {
+          z.dieTimer -= dt;
+          if (z.dieTimer <= 0) z.dead = true;
+          return;
+        }
+
+        const target = state.plants
+          .filter(p => p.row === z.row && Math.abs(p.x - z.x) < 30)
+          .sort((a, b) => b.x - a.x)[0];
+        if (target) {
+          setZombieMode(z, "eat");
+          z.bite -= dt;
+          if (z.bite <= 0) {
+            z.bite = .033;
+            target.hp -= z.attack * .033;
+            target.el.classList.remove("eaten");
+            void target.el.offsetWidth;
+            target.el.classList.add("eaten");
+          }
+        } else {
+          setZombieMode(z, isConeNearSun(z) ? "sunAction" : "walk");
+          z.x -= (z.slow > 0 ? z.baseSpeed * .5 : z.baseSpeed) * dt;
+          z.el.style.left = `${z.x}px`;
+        }
+
+        if (z.x < 75) triggerMower(z.row);
+        if (z.x < 50) endGame(false);
+      });
+
+      state.zombies = state.zombies.filter(z => {
+        if (z.dead) z.el.remove();
+        return !z.dead;
+      });
+    }
+
+    function explode(x, y, radius, damage) {
+      const boom = document.createElement("div");
+      boom.className = "impact";
+      boom.style.left = `${x}px`;
+      boom.style.top = `${y}px`;
+      stage.append(boom);
+      state.zombies.forEach(z => {
+        if (z.mode !== "die" && Math.abs(z.y - y) < radius * 98 && Math.abs(z.x - x) < radius * 82) {
+          z.hp -= damage;
+        }
+      });
+      setTimeout(() => boom.remove(), 720);
+    }
+
+    function pop(x, y) {
+      const el = document.createElement("div");
+      el.className = "small-impact";
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      stage.append(el);
+      setTimeout(() => el.remove(), 260);
+    }
+
+    function smallPop(x, y) { pop(x, y); }
+
+    function updateSuns(dt) {
+      state.suns.forEach(s => {
+        if (!s.landed && s.y < s.targetY) {
+          s.y = Math.min(s.targetY, s.y + s.speed * dt);
+          s.el.style.top = `${s.y}px`;
+          if (s.y >= s.targetY) {
+            s.y = s.targetY;
+            s.landed = true;
+            s.el.style.top = `${s.targetY}px`;
+          }
+        }
+        if (s.landed) s.life -= dt;
+        s.el.style.opacity = "1";
+        if (s.life <= 0) s.dead = true;
+      });
+      state.suns = state.suns.filter(s => {
+        if (s.dead) s.el.remove();
+        return !s.dead;
+      });
+    }
+
+    function triggerMower(row) {
+      const mower = state.mowers.find(m => m.row === row && !m.used);
+      if (!mower) return;
+      mower.used = true;
+      mower.active = true;
+      mower.el.style.zIndex = 18;
+      say(`第 ${row + 1} 路启动割草机`);
+    }
+
+    function updateMowers(dt) {
+      state.mowers.forEach(m => {
+        if (!m.active) return;
+        m.x += 270 * dt;
+        m.el.style.left = `${m.x}px`;
+        state.zombies.forEach(z => {
+          if (z.row === m.row && z.mode !== "die" && Math.abs(z.x - m.x) < 15) z.hp = 0;
+        });
+        if (m.x > 919) {
+          m.active = false;
+          m.el.remove();
+        }
+      });
+    }
+
+    function updateCooldowns(dt) {
+      Object.keys(plantsMeta).forEach(key => {
+        state.cooldowns[key] = Math.max(0, (state.cooldowns[key] || 0) - dt);
+      });
+    }
+
+    function tick(now) {
+      if (!tick.last) tick.last = now;
+      const raw = Math.min(.05, (now - tick.last) / 1000);
+      tick.last = now;
+      if (state.running && !state.paused && !state.gameOver) {
+        const dt = raw * state.speed;
+        state.elapsed += dt;
+        state.spawnClock -= dt;
+        state.skySunClock -= dt;
+        state.wave = 1 + Math.floor(state.elapsed / 24);
+        if (state.wave !== state.lastWave) {
+          state.lastWave = state.wave;
+          showBanner(state.wave % 3 === 0 ? "一大波僵尸来了" : `第 ${state.wave} 波`);
+        }
+        if (state.spawnClock <= 0) {
+          spawnZombie();
+          if (state.wave >= 4 && state.wave % 3 === 0) spawnZombie();
+          state.zombieInterval = Math.max(10, state.zombieInterval / 1.05);
+          state.spawnClock = state.zombieInterval / 3 + Math.random() * (state.zombieInterval * 2 / 3);
+        }
+        if (state.skySunClock <= 0) {
+          const x = 140 + Math.random() * (82 * 7);
+          spawnSun(x, 70, 130 + Math.random() * (98 * 5));
+          state.skySunClock = 7;
+        }
+        updateCooldowns(dt);
+        updatePlants(dt);
+        updatePeas(dt);
+        updateZombies(dt);
+        updateMowers(dt);
+        updateSuns(dt);
+        renderTimer();
+        syncHud();
+        if (state.elapsed > 180) endGame(true);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function renderTimer() {
+      const sec = Math.floor(state.elapsed);
+      timer.textContent = `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+    }
+
+    function showBanner(text) {
+      banner.textContent = text;
+      banner.classList.remove("show");
+      void banner.offsetWidth;
+      banner.classList.add("show");
+    }
+
+    function startGame() {
+      state.running = true;
+      state.gameOver = false;
+      state.paused = false;
+      overlay.classList.add("hidden");
+      showBanner("僵尸要来了");
+      syncHud();
+      say("拖卡片到草坪，守住五条路。");
+      if (state.musicOn) music.play().catch(() => {});
+    }
+
+    function resetGame() {
+      [...state.plants, ...state.zombies, ...state.peas, ...state.suns].forEach(e => e.el.remove());
+      state.mowers.forEach(m => m.el.remove());
+      const freshCooldowns = {};
+      Object.entries(plantsMeta).forEach(([key, meta]) => {
+        freshCooldowns[key] = meta.reload;
+      });
+      Object.assign(state, {
+        running: false,
+        paused: false,
+        gameOver: false,
+        sun: 200,
+        wave: 1,
+        lastWave: 1,
+        elapsed: 0,
+        spawnClock: 16,
+        zombieInterval: 32,
+        skySunClock: 7,
+        speed: 1,
+        id: 1,
+        plants: [],
+        zombies: [],
+        peas: [],
+        suns: [],
+        mowers: [],
+        cooldowns: freshCooldowns,
+        tool: "plant"
+      });
+      tick.last = 0;
+      buildGrid();
+      renderTimer();
+      renderSeeds();
+      syncHud();
+      overlay.classList.remove("hidden");
+      overlay.querySelector("h2").textContent = "准备好了吗？";
+      overlay.querySelector("p").textContent = "这是从你给的 Qt 项目移植出来的网页版。";
+      startBtn.textContent = "开始游戏";
+      say("选择植物卡片，再种到草坪上。");
+    }
+
+    function endGame(won) {
+      if (state.gameOver) return;
+      state.gameOver = true;
+      state.running = false;
+      overlay.classList.remove("hidden");
+      overlay.querySelector("h2").textContent = won ? "守住了！" : "僵尸吃掉了你的脑子";
+      overlay.querySelector("p").textContent = won ? "你撑过了整局，可以换素材再来。" : "重新布阵，先补向日葵和前排。";
+      startBtn.textContent = "再来一局";
+      syncHud();
+    }
+
+    function clearPreview() {
+      if (state.preview) state.preview.classList.remove("preview", "blocked");
+      state.preview = null;
+    }
+
+    function previewCell(row, col, key = state.selected, mode = "plant") {
+      clearPreview();
+      const cell = grid.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+      if (!cell || !state.running || state.paused || state.gameOver) return;
+      const ok = mode === "shovel" ? hasPlant(row, col) : canPlant(row, col, key);
+      cell.classList.add(ok ? "preview" : "blocked");
+      state.preview = cell;
+    }
+
+    function pointToCell(clientX, clientY) {
+      const rect = stage.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const col = Math.floor((x - 99) / 82);
+      const row = Math.floor((y - 81) / 98);
+      if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
+      return { row, col };
+    }
+
+    function beginCardDrag(event, key) {
+      if (event.button !== undefined && event.button !== 0) return;
+      if (state.dragKey) return;
+      setSelectedPlant(key, false);
+      if (!canDragCard(key)) return;
+      event.preventDefault();
+      state.dragMode = "plant";
+      state.dragKey = key;
+      state.dragging = false;
+      state.dragStart = { x: event.clientX, y: event.clientY };
+      if (Number.isInteger(event.pointerId)) event.currentTarget.setPointerCapture?.(event.pointerId);
+      document.addEventListener("pointermove", moveCardDrag);
+      document.addEventListener("mousemove", moveCardDrag);
+      document.addEventListener("pointerup", endCardDrag, { once: true });
+      document.addEventListener("mouseup", endCardDrag, { once: true });
+    }
+
+    function beginShovelDrag(event) {
+      if (event.button !== undefined && event.button !== 0) return;
+      if (state.dragKey) return;
+      if (!state.running || state.paused || state.gameOver) return;
+      event.preventDefault();
+      state.dragMode = "shovel";
+      state.dragKey = "shovel";
+      state.dragging = false;
+      state.dragStart = { x: event.clientX, y: event.clientY };
+      if (Number.isInteger(event.pointerId)) event.currentTarget.setPointerCapture?.(event.pointerId);
+      document.addEventListener("pointermove", moveCardDrag);
+      document.addEventListener("mousemove", moveCardDrag);
+      document.addEventListener("pointerup", endCardDrag, { once: true });
+      document.addEventListener("mouseup", endCardDrag, { once: true });
+    }
+
+    function moveCardDrag(event) {
+      if (!state.dragKey || !state.dragStart) return;
+      const distance = Math.hypot(event.clientX - state.dragStart.x, event.clientY - state.dragStart.y);
+      if (!state.dragging && distance > 5) {
+        state.dragging = true;
+        startGhost(state.dragKey, event.clientX, event.clientY, state.dragMode);
+      }
+      if (!state.dragging) return;
+      event.preventDefault();
+      moveGhost(event.clientX, event.clientY);
+      clearPreview();
+    }
+
+    function endCardDrag(event) {
+      document.removeEventListener("pointermove", moveCardDrag);
+      document.removeEventListener("mousemove", moveCardDrag);
+      document.removeEventListener("mouseup", endCardDrag);
+      const key = state.dragKey;
+      const mode = state.dragMode;
+      const wasDragging = state.dragging;
+      if (wasDragging) {
+        state.suppressClick = true;
+        setTimeout(() => { state.suppressClick = false; }, 0);
+      }
+      state.dragMode = null;
+      state.dragKey = null;
+      state.dragStart = null;
+      state.dragging = false;
+      stopGhost();
+      if (!key || !wasDragging) return;
+      const cell = pointToCell(event.clientX, event.clientY);
+      if (cell) {
+        if (mode === "shovel") shovel(cell.row, cell.col);
+        else {
+          setSelectedPlant(key, false);
+          plantAt(cell.row, cell.col, key);
+        }
+      }
+      renderSeeds();
+    }
+
+    function startGhost(key, x, y, mode = "plant") {
+      stopGhost();
+      state.ghost = document.createElement("div");
+      state.ghost.className = `ghost ${mode === "shovel" ? "shovel" : ""}`;
+      state.ghost.style.backgroundImage = mode === "shovel" ? img("Shovel.png") : img(plantsMeta[key].icon);
+      document.body.append(state.ghost);
+      moveGhost(x, y);
+    }
+
+    function moveGhost(x, y) {
+      if (!state.ghost) return;
+      state.ghost.style.left = `${x}px`;
+      state.ghost.style.top = `${y}px`;
+    }
+
+    function stopGhost() {
+      if (state.ghost) state.ghost.remove();
+      state.ghost = null;
+      clearPreview();
+    }
+
+    textureTabs.addEventListener("click", event => {
+      const btn = event.target.closest("button[data-texture]");
+      if (!btn) return;
+      state.textureTarget = btn.dataset.texture;
+      textureTabs.querySelectorAll("button").forEach(tab => tab.setAttribute("aria-pressed", String(tab === btn)));
+      say(`现在替换：${btn.textContent}`);
+    });
+
+    textureInput.addEventListener("change", () => {
+      const file = textureInput.files[0];
+      textureInput.value = "";
+      if (!file || !file.type.startsWith("image/")) return say("请选择图片文件。");
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.textures[state.textureTarget] = reader.result;
+        localStorage.setItem(textureStorageKey(state.textureTarget), reader.result);
+        applyTextures();
+        say("贴图已替换。");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    clearTexture.addEventListener("click", () => {
+      state.textures[state.textureTarget] = "";
+      localStorage.removeItem(textureStorageKey(state.textureTarget));
+      applyTextures();
+      say("已还原默认素材。");
+    });
+
+    shovelBtn.addEventListener("click", () => {
+      if (state.suppressClick) return;
+      state.tool = state.tool === "shovel" ? "plant" : "shovel";
+      shovelBtn.setAttribute("aria-pressed", String(state.tool === "shovel"));
+      say(state.tool === "shovel" ? "铲子已拿起，点植物移除。" : `已选择：${plantsMeta[state.selected].name}`);
+    });
+    shovelBtn.addEventListener("pointerdown", beginShovelDrag);
+    shovelBtn.addEventListener("mousedown", beginShovelDrag);
+
+    pauseBtn.addEventListener("click", () => {
+      if (!state.running || state.gameOver) return;
+      state.paused = !state.paused;
+      say(state.paused ? "已暂停。" : "继续防守。");
+      syncHud();
+    });
+
+    speedBtn.addEventListener("click", () => {
+      state.speed = state.speed === 1 ? 2 : 1;
+      syncHud();
+    });
+
+    musicBtn.addEventListener("click", () => {
+      state.musicOn = !state.musicOn;
+      if (state.musicOn) music.play().catch(() => say("浏览器拦截了音乐，开始游戏后再点一次。"));
+      else music.pause();
+      syncHud();
+    });
+
+    startBtn.addEventListener("click", () => {
+      if (state.gameOver || state.elapsed > 0) resetGame();
+      startGame();
+    });
+
+    restartBtn.addEventListener("click", resetGame);
+
+    grid.addEventListener("pointermove", event => {
+      if (state.dragging) return;
+      const cell = pointToCell(event.clientX, event.clientY);
+      if (cell) previewCell(cell.row, cell.col, state.selected, state.tool);
+    });
+    grid.addEventListener("pointerleave", clearPreview);
+
+    document.addEventListener("paste", event => {
+      const imageItem = [...event.clipboardData.items].find(item => item.type.startsWith("image/"));
+      if (!imageItem) return;
+      event.preventDefault();
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.textures[state.textureTarget] = reader.result;
+        localStorage.setItem(textureStorageKey(state.textureTarget), reader.result);
+        applyTextures();
+        say("已从剪贴板替换贴图。");
+      };
+      reader.readAsDataURL(imageItem.getAsFile());
+    });
+
+    applyTextures();
+    renderSeeds();
+    resetGame();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
