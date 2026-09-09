@@ -14,7 +14,7 @@
       --asset-plant: none;
       --asset-zombie: none;
       --asset-pea: none;
-      --asset-lawn: url("assets/pvz/Background.jpg");
+      --asset-lawn: url("Background.jpg");
     }
 
     * { box-sizing: border-box; }
@@ -362,7 +362,7 @@
       width: 90px;
       height: 90px;
       border: 0;
-      background: url("assets/pvz/custom-sun-transparent.gif") center / contain no-repeat;
+      background: url("custom-sun-transparent.gif") center / contain no-repeat;
       cursor: pointer;
       z-index: 20;
       filter: drop-shadow(0 4px 4px rgba(80, 53, 15, .24));
@@ -373,7 +373,7 @@
       position: absolute;
       width: 60px;
       height: 60px;
-      background: url("assets/pvz/LawnMower.png") center / contain no-repeat;
+      background: url("LawnMower.png") center / contain no-repeat;
       transform: translate(-50%, -50%);
       z-index: 6;
       filter: drop-shadow(0 6px 4px rgba(20, 34, 20, .24));
@@ -384,7 +384,7 @@
       width: 150px;
       height: 150px;
       transform: translate(-50%, -50%);
-      background: url("assets/pvz/Boom.gif") center / contain no-repeat;
+      background: url("Boom.gif") center / contain no-repeat;
       z-index: 14;
       pointer-events: none;
     }
@@ -540,10 +540,10 @@
     </section>
   </main>
 
-  <audio id="music" src="assets/pvz/Grazy%20Dave.mp3" loop></audio>
+  <audio id="music" src="Grazy%20Dave.mp3" loop></audio>
 
   <script>
-    const A = "assets/pvz/";
+    const A = "";
     const stage = document.getElementById("stage");
     const grid = document.getElementById("grid");
     const seedBank = document.getElementById("seedBank");
@@ -567,13 +567,13 @@
     const rows = 5;
     const cols = 9;
     const plantsMeta = {
-      sunflower: { qt: "SunFlower", name: "向日葵", cost: 50, reload: 7.5, hp: 300, img: "../custom/roommate-sunflower.gif", icon: "../custom/roommate-sunflower.png", sunRate: 10 },
-      peashooter: { qt: "Peashooter", name: "豌豆", cost: 100, reload: 7.5, hp: 300, img: "../custom/roommate-peashooter.gif", icon: "../custom/roommate-peashooter.png", fireRate: 1.4, damage: 25, shots: 1 },
-      cherry: { qt: "CherryBomb", name: "樱桃", cost: 150, reload: 20, hp: 300, img: "../custom/roommate-cherry-bomb-outward.gif", icon: "../custom/roommate-cherry-bomb-outward.png", bombDelay: 1.15, bombRadius: 1.6, damage: 1800 },
-      wallnut: { qt: "WallNut", name: "坚果", cost: 50, reload: 20, hp: 4000, img: "../custom/roommate-wallnut-v2.gif", icon: "../custom/roommate-wallnut-v2.png" },
-      snowpea: { qt: "SnowPea", name: "寒冰", cost: 175, reload: 7.5, hp: 300, img: "../custom/roommate-peashooter-ice.gif", icon: "../custom/roommate-peashooter-ice.png", fireRate: 1.4, damage: 25, slow: true, shots: 1 },
-      potato: { qt: "PotatoMine", name: "土豆雷", cost: 25, reload: 20, hp: 300, img: "../custom/roommate-potato-game-sheet.png", icon: "../custom/roommate-potato.png", armTime: 15, emergeTime: 1.65, damage: 1800 },
-      repeater: { qt: "Repeater", name: "双发", cost: 200, reload: 7.5, hp: 300, img: "../custom/roommate-peashooter-punk.gif", icon: "../custom/roommate-peashooter-punk.png", fireRate: 1.4, damage: 25, shots: 2 }
+      sunflower: { qt: "SunFlower", name: "向日葵", cost: 50, reload: 7.5, hp: 300, img: "roommate-sunflower.gif", icon: "roommate-sunflower.png", sunRate: 10 },
+      peashooter: { qt: "Peashooter", name: "豌豆", cost: 100, reload: 7.5, hp: 300, img: "roommate-peashooter.gif", icon: "roommate-peashooter.png", fireRate: 1.4, damage: 25, shots: 1 },
+      cherry: { qt: "CherryBomb", name: "樱桃", cost: 150, reload: 20, hp: 300, img: "roommate-cherry-bomb-outward.gif", icon: "roommate-cherry-bomb-outward.png", bombDelay: 1.15, bombRadius: 1.6, damage: 1800 },
+      wallnut: { qt: "WallNut", name: "坚果", cost: 50, reload: 20, hp: 4000, img: "roommate-wallnut-v2.gif", icon: "roommate-wallnut-v2.png" },
+      snowpea: { qt: "SnowPea", name: "寒冰", cost: 175, reload: 7.5, hp: 300, img: "roommate-peashooter-ice.gif", icon: "roommate-peashooter-ice.png", fireRate: 1.4, damage: 25, slow: true, shots: 1 },
+      potato: { qt: "PotatoMine", name: "土豆雷", cost: 25, reload: 20, hp: 300, img: "roommate-potato-game-sheet.png", icon: "roommate-potato.png", armTime: 15, emergeTime: 1.65, damage: 1800 },
+      repeater: { qt: "Repeater", name: "双发", cost: 200, reload: 7.5, hp: 300, img: "roommate-peashooter-punk.gif", icon: "roommate-peashooter-punk.png", fireRate: 1.4, damage: 25, shots: 2 }
     };
 
     const zombieMeta = {
